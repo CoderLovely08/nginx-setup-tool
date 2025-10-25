@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nginx Domain Setup Generator for Node.js</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            padding: 5px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Important for padding to be inside width */
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        pre {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            font-size: 14px;
+            border-left: 5px solid #3498db;
+        }
+
+        code {
+            font-family: monospace;
+        }
+
+        .note {
+            background-color: #f9f9e2;
+            padding: 10px;
+            border-left: 4px solid #f39c12;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Nginx Setup Command Generator for Node.js</h1>
+    <p>Enter your domain/subdomain and the port your Node.js application is running on to generate the necessary setup commands.</p>
+
+    <label for="domainInput">Domain or Subdomain (e.g., example.com or api.example.com):</label>
+    <input type="text" id="domainInput" placeholder="Enter domain or subdomain" value="subdomain.example.com">
+
+    <label for="portInput">Node.js Application Port (e.g., 4000, 3000):</label>
+    <input type="number" id="portInput" placeholder="Enter port number" value="4000">
+
+    <button onclick="generateCommands()">Generate Commands</button>
+
+    <hr style="margin: 30px 0;">
+
+    <div id="output">
+        </div>
+</div>
+
+<script>
+    function generateCommands() {
+        const domain = document.getElementById('domainInput').value.trim();
+        const port = document.getElementById('portInput').value.trim();
+        const outputDiv = document.getElementById('output');
+
+        if (!domain || !port) {
+            outputDiv.innerHTML = '<p style="color: red;">Please enter both the domain/subdomain and the Node.js port.</p>';
+            return;
+        }
+
+        const configFileName = domain.replace(/[\/\\?%*:|"<>\s]/g, '_'); // Basic cleanup for filename
+
+        // --- Step 1 Commands ---
+        const step1 = `
+            <h2>Step 1: Install and Start Nginx</h2>
+            <p>Run these commands to install, start, and verify Nginx on your server:</p>
+            <pre>
+# Install Nginx
+sudo apt update
+sudo apt install nginx -y
+
+# Start and enable Nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# Verify Nginx status
+sudo systemctl status nginx
+            </pre>
+            <div class="note">
+                <strong>Note:</strong> Visit your server's IP address in a browser to ensure Nginx is serving the default welcome page.
+            </div>
+        `;
+
+        // --- Step 2 Commands ---
+        const nginxConfig = `server {
+    listen 80;
+    server_name ${domain};
+
+    location / {
+        proxy_pass http://localhost:${port}; # Proxy traffic to your Node.js app on port ${port}
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+`;
+
+        const step2 = `
+            <h2>Step 2: Configure Nginx Reverse Proxy</h2>
+            <p><strong>1. Create the configuration file:</strong></p>
+            <pre>sudo nano /etc/nginx/sites-available/${configFileName}</pre>
+
+            <p><strong>2. Add the following Nginx configuration</strong> (copy and paste this into the file you just opened):</p>
+            <pre><code>${nginxConfig}</code></pre>
+            <div class="note">
+                Remember to save and close the file (usually $\\text{Ctrl+X}$, $\\text{Y}$, then $\\text{Enter}$ in $\\text{nano}$).
+            </div>
+
+            <p><strong>3. Enable the configuration, test, and restart Nginx:</strong></p>
+            <pre>
+# Create a symbolic link to enable the configuration
+sudo ln -s /etc/nginx/sites-available/${configFileName} /etc/nginx/sites-enabled/
+
+# Test the Nginx configuration for syntax errors
+sudo nginx -t
+
+# Restart Nginx to apply changes
+sudo systemctl restart nginx
+            </pre>
+        `;
+
+        // --- Step 3 Commands ---
+        const step3 = `
+            <h2>Step 3: Configure SSL/TLS with Certbot (Recommended)</h2>
+            <p>Secure your site with a free Let's Encrypt SSL certificate.</p>
+
+            <p><strong>1. Install Certbot and the Nginx plugin:</strong></p>
+            <pre>sudo apt install certbot python3-certbot-nginx -y</pre>
+
+            <p><strong>2. Obtain and install the SSL certificate:</strong></p>
+            <pre>sudo certbot --nginx -d ${domain}</pre>
+            <div class="note">
+                Certbot will automatically modify your Nginx configuration to enable $\\text{HTTPS}$ on port $\\text{443}$ and set up a redirect from $\\text{HTTP}$ to $\\text{HTTPS}$. Follow the prompts.
+            </div>
+        `;
+
+        // Combine all steps
+        outputDiv.innerHTML = step1 + step2 + step3;
+    }
+
+    // Generate commands on page load with default values
+    document.addEventListener('DOMContentLoaded', generateCommands);
+</script>
+
+</body>
+</html>
