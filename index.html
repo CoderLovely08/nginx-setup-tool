@@ -3,43 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nginx Domain Setup Generator for Node.js</title>
+    <title>Nginx Domain Setup Generator</title>
     <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --bg-light: #f4f7f6;
+            --code-bg: #ecf0f1;
+            --success-color: #2ecc71;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            background-color: #f4f7f6;
+            background-color: var(--bg-light);
             color: #333;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             background-color: #ffffff;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
         }
 
         h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--primary-color);
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
 
         h2 {
-            color: #34495e;
+            color: var(--secondary-color);
             margin-top: 30px;
             padding: 5px 0;
+            border-bottom: 1px dashed var(--code-bg);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr; /* Left (Inputs) 1 part, Right (Commands) 2 parts */
+            gap: 30px;
+        }
+
+        .left-panel {
+            padding-right: 20px;
         }
 
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
-            color: #34495e;
+            color: var(--secondary-color);
         }
 
         input[type="text"], input[type="number"] {
@@ -48,12 +68,12 @@
             margin-bottom: 20px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            box-sizing: border-box; /* Important for padding to be inside width */
+            box-sizing: border-box;
             font-size: 16px;
         }
 
         button {
-            background-color: #3498db;
+            background-color: var(--primary-color);
             color: white;
             padding: 10px 15px;
             border: none;
@@ -66,29 +86,102 @@
         button:hover {
             background-color: #2980b9;
         }
+        
+        /* Command Block Styling */
+        .command-block {
+            position: relative;
+            margin-bottom: 20px;
+        }
 
         pre {
-            background-color: #ecf0f1;
+            background-color: var(--code-bg);
             padding: 15px;
+            padding-right: 50px; /* Space for the copy button */
             border-radius: 4px;
             overflow-x: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
             font-family: monospace;
             font-size: 14px;
-            border-left: 5px solid #3498db;
+            border-left: 5px solid var(--primary-color);
         }
 
-        code {
-            font-family: monospace;
+        .copy-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px 8px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .copy-btn:hover {
+            opacity: 1;
+        }
+
+        .copy-btn.copied {
+            background-color: var(--success-color);
+        }
+
+        .note, .docs-link {
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            border-radius: 4px;
         }
 
         .note {
             background-color: #f9f9e2;
-            padding: 10px;
             border-left: 4px solid #f39c12;
-            margin-top: 15px;
-            font-size: 0.9em;
+        }
+
+        .docs-link {
+            background-color: #e8f6fa;
+            border: 1px solid var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .docs-link a {
+            color: var(--primary-color);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        /* Notification/Alert */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--success-color);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        #notification.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media (max-width: 900px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            .left-panel {
+                padding-right: 0;
+            }
         }
     </style>
 </head>
@@ -96,58 +189,76 @@
 
 <div class="container">
     <h1>Nginx Setup Command Generator for Node.js</h1>
-    <p>Enter your domain/subdomain and the port your Node.js application is running on to generate the necessary setup commands.</p>
+    
+    <div class="grid-container">
+        <div class="left-panel">
+            <div class="docs-link">
+                🔗 <a href="https://github.com/CoderLovely08/Backend-Starter/blob/main/docs/04%20Nginx%20Server%20Setup.md" target="_blank">Read Documentation</a>
+            </div>
 
-    <label for="domainInput">Domain or Subdomain (e.g., example.com or api.example.com):</label>
-    <input type="text" id="domainInput" placeholder="Enter domain or subdomain" value="subdomain.example.com">
+            <label for="domainInput">Domain or Subdomain:</label>
+            <input type="text" id="domainInput" placeholder="e.g., api.example.com" value="subdomain.example.com">
 
-    <label for="portInput">Node.js Application Port (e.g., 4000, 3000):</label>
-    <input type="number" id="portInput" placeholder="Enter port number" value="4000">
+            <label for="portInput">Node.js Application Port:</label>
+            <input type="number" id="portInput" placeholder="e.g., 4000" value="4000">
 
-    <button onclick="generateCommands()">Generate Commands</button>
+            <button onclick="generateCommands()">Generate & Update Commands</button>
+            
+            <div class="note">
+                Ensure your domain points to this server's IP address and your Node.js app is running on the specified port before executing the commands.
+            </div>
 
-    <hr style="margin: 30px 0;">
-
-    <div id="output">
         </div>
+
+        <div class="right-panel" id="output">
+            <p style="color: #666;">Enter details and click "Generate & Update Commands" to see the setup script.</p>
+        </div>
+    </div>
 </div>
 
+<div id="notification">✅ Commands Generated Successfully!</div>
+
 <script>
+    /**
+     * Handles the click-to-copy functionality for any element.
+     * @param {string} id The ID of the <pre> element containing the text to copy.
+     * @param {HTMLElement} btn The button element that was clicked.
+     */
+    function copyCommand(id, btn) {
+        const textToCopy = document.getElementById(id).textContent;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('copied');
+            }, 1500);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert('Failed to copy. Please manually select the text.');
+        });
+    }
+
+    /**
+     * Generates and displays the Nginx setup commands based on user input.
+     */
     function generateCommands() {
         const domain = document.getElementById('domainInput').value.trim();
         const port = document.getElementById('portInput').value.trim();
         const outputDiv = document.getElementById('output');
 
         if (!domain || !port) {
-            outputDiv.innerHTML = '<p style="color: red;">Please enter both the domain/subdomain and the Node.js port.</p>';
+            outputDiv.innerHTML = '<p style="color: red;">⚠️ Please enter both the domain/subdomain and the Node.js port.</p>';
             return;
         }
 
-        const configFileName = domain.replace(/[\/\\?%*:|"<>\s]/g, '_'); // Basic cleanup for filename
+        // Use a cleaned version of the domain for the config filename
+        const configFileName = domain.replace(/[^a-z0-9\-\.]/gi, ''); 
 
-        // --- Step 1 Commands ---
-        const step1 = `
-            <h2>Step 1: Install and Start Nginx</h2>
-            <p>Run these commands to install, start, and verify Nginx on your server:</p>
-            <pre>
-# Install Nginx
-sudo apt update
-sudo apt install nginx -y
-
-# Start and enable Nginx
-sudo systemctl start nginx
-sudo systemctl enable nginx
-
-# Verify Nginx status
-sudo systemctl status nginx
-            </pre>
-            <div class="note">
-                <strong>Note:</strong> Visit your server's IP address in a browser to ensure Nginx is serving the default welcome page.
-            </div>
-        `;
-
-        // --- Step 2 Commands ---
-        const nginxConfig = `server {
+        // --- Nginx Configuration File Content ---
+        const nginxConfigContent = `server {
     listen 80;
     server_name ${domain};
 
@@ -162,47 +273,76 @@ sudo systemctl status nginx
 }
 `;
 
-        const step2 = `
-            <h2>Step 2: Configure Nginx Reverse Proxy</h2>
-            <p><strong>1. Create the configuration file:</strong></p>
-            <pre>sudo nano /etc/nginx/sites-available/${configFileName}</pre>
+        // Function to create a command block HTML structure
+        const createCommandBlock = (id, title, commands, isConfig = false) => {
+            const copyText = isConfig ? 'Copy Config' : 'Copy Commands';
+            return `
+                <h2>${title}</h2>
+                <div class="command-block">
+                    <button class="copy-btn" onclick="copyCommand('${id}', this)">${copyText}</button>
+                    <pre id="${id}"><code>${commands}</code></pre>
+                </div>
+            `;
+        };
 
-            <p><strong>2. Add the following Nginx configuration</strong> (copy and paste this into the file you just opened):</p>
-            <pre><code>${nginxConfig}</code></pre>
-            <div class="note">
-                Remember to save and close the file (usually $\\text{Ctrl+X}$, $\\text{Y}$, then $\\text{Enter}$ in $\\text{nano}$).
-            </div>
+        // --- Step 1 Commands: Install Nginx ---
+        const step1Commands = `
+sudo apt update
+sudo apt install nginx -y
+sudo systemctl start nginx
+sudo systemctl enable nginx
+sudo systemctl status nginx
+        `.trim();
+        const step1Html = createCommandBlock('step1', 'Step 1: Install and Verify Nginx', step1Commands);
 
-            <p><strong>3. Enable the configuration, test, and restart Nginx:</strong></p>
-            <pre>
-# Create a symbolic link to enable the configuration
+        // --- Step 2 Commands: Configure Nginx ---
+        const step2Commands = `
+# 1. Create the configuration file:
+sudo nano /etc/nginx/sites-available/${configFileName}
+
+# 2. Add the configuration content (see block below). Save and close the file.
+
+# 3. Enable the configuration and test:
 sudo ln -s /etc/nginx/sites-available/${configFileName} /etc/nginx/sites-enabled/
-
-# Test the Nginx configuration for syntax errors
 sudo nginx -t
 
-# Restart Nginx to apply changes
+# 4. Restart Nginx to apply changes:
 sudo systemctl restart nginx
-            </pre>
-        `;
+        `.trim();
+        const step2Html = createCommandBlock('step2', 'Step 2: Configure Nginx Reverse Proxy', step2Commands);
 
-        // --- Step 3 Commands ---
-        const step3 = `
-            <h2>Step 3: Configure SSL/TLS with Certbot (Recommended)</h2>
-            <p>Secure your site with a free Let's Encrypt SSL certificate.</p>
+        // --- Nginx Config File Content Block ---
+        const configBlockHtml = createCommandBlock('nginx-config-content', 'Configuration Content for ' + configFileName, nginxConfigContent, true);
 
-            <p><strong>1. Install Certbot and the Nginx plugin:</strong></p>
-            <pre>sudo apt install certbot python3-certbot-nginx -y</pre>
 
-            <p><strong>2. Obtain and install the SSL certificate:</strong></p>
-            <pre>sudo certbot --nginx -d ${domain}</pre>
-            <div class="note">
-                Certbot will automatically modify your Nginx configuration to enable $\\text{HTTPS}$ on port $\\text{443}$ and set up a redirect from $\\text{HTTP}$ to $\\text{HTTPS}$. Follow the prompts.
-            </div>
-        `;
+        // --- Step 3 Commands: Configure SSL ---
+        const step3Commands = `
+# 1. Install Certbot and the Nginx plugin:
+sudo apt install certbot python3-certbot-nginx -y
+
+# 2. Obtain and install the SSL certificate:
+sudo certbot --nginx -d ${domain}
+        `.trim();
+        const step3Html = createCommandBlock('step3', 'Step 3: Configure SSL/TLS with Certbot', step3Commands) +
+             '<div class="note">Certbot will automatically update your Nginx configuration for HTTPS on port 443 and setup a redirect.</div>';
+
 
         // Combine all steps
-        outputDiv.innerHTML = step1 + step2 + step3;
+        outputDiv.innerHTML = step1Html + step2Html + configBlockHtml + step3Html;
+
+        // Show Notification
+        showNotification();
+    }
+    
+    /**
+     * Shows a brief success notification.
+     */
+    function showNotification() {
+        const notif = document.getElementById('notification');
+        notif.classList.add('show');
+        setTimeout(() => {
+            notif.classList.remove('show');
+        }, 3000);
     }
 
     // Generate commands on page load with default values
