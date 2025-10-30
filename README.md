@@ -8,6 +8,9 @@ A clean and intuitive **web-based tool** that generates all the necessary comman
 
 👉 [**nginx-setup-tool.vercel.app**](https://nginx-setup-tool.vercel.app/)
 
+
+![Demo Image](./nginx-setup-tool-demo.png)
+
 ---
 
 ## 🚀 Features
